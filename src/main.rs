@@ -88,7 +88,7 @@ impl Sandbox for State {
         for (index, &coeff, _state) in izip!(0.., self.digits.iter(), self.sliders.iter_mut()) {
             out = out.push(
                 Row::new()
-                    .push(Text::new(index.to_string()))
+                    .push(Text::new(coeff.to_string()))
                     .push(Slider::new(
                         _state,
                         0..=(DECIMAL - 1),
@@ -102,5 +102,7 @@ impl Sandbox for State {
 }
 
 fn main() -> iced::Result {
-    State::run(Settings::default())
+    let mut settings = Settings::default();
+    settings.window.size = (400, 300);
+    State::run(settings)
 }
