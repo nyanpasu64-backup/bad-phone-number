@@ -2,7 +2,6 @@
 use iced::widget::slider;
 use iced::{Column, Element, Row, Sandbox, Settings, Slider, Text};
 use itertools::izip;
-use mod_exp::mod_exp;
 
 type Num = i32;
 const NDIGITS: usize = 10;
@@ -27,7 +26,7 @@ impl Sandbox for State {
     }
 
     fn title(&self) -> String {
-        String::from("Polynomial phone number entry widget")
+        String::from("Pascal's Pager")
     }
 
     fn update(&mut self, message: Message) {
@@ -46,9 +45,16 @@ impl Sandbox for State {
         let mut out = Column::new().push(
             Text::new({
                 let mut ys = [0; NDIGITS];
-                for (x, y) in ys.iter_mut().enumerate() {
-                    for (exp, &coeff) in self.digits.iter().enumerate() {
-                        *y += coeff * mod_exp(x as i32, exp as i32, DECIMAL);
+                let mut pascal = [0; NDIGITS];
+                pascal[0] = 1;
+
+                for &coeff in self.digits.iter() {
+                    for (y, &p) in ys.iter_mut().zip(pascal.iter()) {
+                        *y += coeff * p;
+                    }
+                    for i in (1..pascal.len()).rev() {
+                        pascal[i] += pascal[i - 1];
+                        pascal[i] %= DECIMAL;
                     }
                 }
 
@@ -61,20 +67,17 @@ impl Sandbox for State {
             .size(50)
             .horizontal_alignment(iced::HorizontalAlignment::Center), // doesn't work
         );
-        let mut plus = false;
-        for (exp, &coeff, _state) in izip!(0.., self.digits.iter(), self.sliders.iter_mut()) {
-            let operator = if plus { "+ " } else { "" };
+        for (index, &coeff, _state) in izip!(0.., self.digits.iter(), self.sliders.iter_mut()) {
             out = out.push(
                 Row::new()
-                    .push(Text::new(format!("{}{}x^{}", operator, coeff, exp)))
+                    .push(Text::new(index.to_string()))
                     .push(Slider::new(
                         _state,
                         0..=(DECIMAL - 1),
                         coeff,
-                        move |value| Message::SetSlider { index: exp, value },
-                    )),
+                        move |value| Message::SetSlider { index, value },
+                    ))
             );
-            plus = true;
         }
         out.into()
     }
