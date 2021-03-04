@@ -6,6 +6,7 @@ use mod_exp::mod_exp;
 
 type Num = i32;
 const NDIGITS: usize = 10;
+const DECIMAL: i32 = 10;
 
 #[derive(Default)]
 struct State {
@@ -44,23 +45,36 @@ impl Sandbox for State {
         // We use a column: a simple vertical layout
         let mut out = Column::new().push(
             Text::new({
+                let mut ys = [0; NDIGITS];
+                for (x, y) in ys.iter_mut().enumerate() {
+                    for (exp, &coeff) in self.digits.iter().enumerate() {
+                        *y += coeff * mod_exp(x as i32, exp as i32, DECIMAL);
+                    }
+                }
+
                 let mut s = String::new();
-                for &d in &self.digits {
-                    write!(&mut s, "{}", d).unwrap();
+                for &y in &ys {
+                    write!(&mut s, "{}", y % DECIMAL).unwrap();
                 }
                 s
             })
             .size(50)
             .horizontal_alignment(iced::HorizontalAlignment::Center), // doesn't work
         );
-        for (index, &value, _state) in izip!(0.., self.digits.iter(), self.sliders.iter_mut()) {
+        let mut plus = false;
+        for (exp, &coeff, _state) in izip!(0.., self.digits.iter(), self.sliders.iter_mut()) {
+            let operator = if plus { "+ " } else { "" };
             out = out.push(
                 Row::new()
-                    .push(Text::new(format!("{}x^{}", value, index)))
-                    .push(Slider::new(_state, 0..=9, value, move |value| {
-                        Message::SetSlider { index, value }
-                    })),
+                    .push(Text::new(format!("{}{}x^{}", operator, coeff, exp)))
+                    .push(Slider::new(
+                        _state,
+                        0..=(DECIMAL - 1),
+                        coeff,
+                        move |value| Message::SetSlider { index: exp, value },
+                    )),
             );
+            plus = true;
         }
         out.into()
     }
